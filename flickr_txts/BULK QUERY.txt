@@ -1,0 +1,4 @@
+LOAD DATA LOCAL INFILE 'C:/Users/georg_000/Desktop/flickr_txts/1-1-14 to 7-5-14 2nd.txt'
+ INTO TABLE photos
+  FIELDS TERMINATED BY '{#}'
+  LINES TERMINATED BY '{$}'

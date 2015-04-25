@@ -1,0 +1,18 @@
+ftiaxneis ena neo table me onoma numbers
+kai me 25 rows
+create table `numbers` (n int);
+
+insert into numbers values (1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12),(13),(14),(15),(16),(17),(18),(19),(20),(21),(22),(23),(24),(25);
+to 25 einai tipiko. an exeis perissotera apo 25 tag values mesa sto column tag, tote vale perissotera rows ston pinaka numbers
+kai meta trexeis afto to query:
+(afou exw dimiourgisei ena table photoid_tag me 2 columns id,tags)
+
+SELECT
+  photoID,
+  SUBSTRING_INDEX(SUBSTRING_INDEX(tag, ' ', numbers.n), ' ', -1) tag
+FROM
+  numbers INNER JOIN photoid_tag
+  ON CHAR_LENGTH(photoid_tag.tag)
+     -CHAR_LENGTH(REPLACE(photoid_tag.tag, ' ', ''))>=numbers.n-1
+ORDER BY
+  photoID, n;

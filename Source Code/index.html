@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no"/>
+    <link rel="stylesheet" type="text/css" href="myApp.css" />
+    <title>HotSpot it</title>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-B29qHR3bQ3ESzaurWQPN6QK1vmIOZi0"></script>
+    <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/tags/markerclustererplus/2.0.12/src/markerclusterer_packed.js"></script>
+    <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerwithlabel/src/markerwithlabel.js"></script>
+    <script type="text/javascript" src="http://jawj.github.io/OverlappingMarkerSpiderfier/bin/oms.min.js"></script>
+    
+  <script type="text/javascript">
+   
+  var flag;
+  var myArray;
+  var myLatLon = [];
+  var rectangle;
+  var rectangle2;
+  var labelMarkers= [];
+  var url;
+  var myClickListener;
+  var templatlng;
+  var markers=[];
+  var gm = google.maps;
+  var omg;
+
+    function initialize() {
+
+      var latlng = new google.maps.LatLng(39.0214215, 23.8377375);
+      var myOptions = {
+        zoom: 7,
+        center: latlng,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: false,
+        navigationControl: false,
+        streetViewControl: false
+      };
+
+      document.map = new gm.Map(document.getElementById("map_canvas"),myOptions);
+
+      google.maps.event.addListener(document.map, "zoom_changed", function(event) {
+
+            if (rectangle2){ 
+
+             var zoomlvl = document.map.getZoom();
+
+               if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())<0.015){  //cases gia na fainetai to tempcount analoga me to zoomlvl
+                 for (var i = 0; i<labelMarkers.length; i++){
+                    if (document.map.getZoom()>15){
+                      labelMarkers[i].setVisible(true);
+                    }else if (document.map.getZoom()<=15){
+                      labelMarkers[i].setVisible(false);
+                   }
+                }
+               }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>0.015 && (rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())<0.027){ 
+                 for (var i = 0; i<labelMarkers.length; i++){
+                    if (document.map.getZoom()>14){
+                      labelMarkers[i].setVisible(true);
+                    }else if (document.map.getZoom()<=14){
+                      labelMarkers[i].setVisible(false);
+                   }
+                }
+               }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.027 &&(rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())< 0.035){     
+                 for (var i = 0; i<labelMarkers.length; i++){
+                    if (document.map.getZoom()>13){
+                      labelMarkers[i].setVisible(true);
+                    }else if (document.map.getZoom()<=13){
+                      labelMarkers[i].setVisible(false);
+                   }
+                }
+               }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.035 &&(rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())< 0.17){
+                 for (var i = 0; i<labelMarkers.length; i++){
+                    if (document.map.getZoom()>12){
+                      labelMarkers[i].setVisible(true);
+                    }else if (document.map.getZoom()<=12){
+                      labelMarkers[i].setVisible(false);
+                   }
+                }
+               }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.17){
+                 for (var i = 0; i<labelMarkers.length; i++){
+                    if (document.map.getZoom()>11){
+                      labelMarkers[i].setVisible(true);
+                    }else if (document.map.getZoom()<=11){
+                      labelMarkers[i].setVisible(false);
+                   }
+                }
+             }
+          }else{
+            if (document.map.getZoom()<=13){
+              for (var i = 0; i<labelMarkers.length; i++){
+                labelMarkers[i].setVisible(false);
+              }
+            }else if (document.map.getZoom()>13){
+              for (var i = 0; i<labelMarkers.length; i++){
+                labelMarkers[i].setVisible(true);
+              }
+            }
+           
+           }
+
+        });  
+        
+       oms = new OverlappingMarkerSpiderfier(document.map);
+
+      var iw = new gm.InfoWindow();
+       oms.addListener('click', function(marker, event) {
+       iw.setContent(marker.desc);
+       iw.open(document.map, marker);
+      });
+        
+  }
+
+    function selectRectangle(){
+
+      if (myClickListener){
+        google.maps.event.removeListener(myClickListener);
+      }
+      myClickListener = google.maps.event.addListener(document.map, "rightclick", function(event) {
+        var lat = event.latLng.lat();
+        var lng = event.latLng.lng();
+        myLatLon.push(new google.maps.LatLng(lat, lng));   
+
+        if(myLatLon.length>2){
+          myLatLon.length = 0;
+          rectangle2.setMap(null);
+        }else if (myLatLon.length == 2){
+              document.map.setOptions({draggable: true, zoomControl: true, scrollwheel: true, disableDoubleClickZoom: true});
+
+              var a = myLatLon[0].lat();
+              var b = myLatLon[1].lat();
+              var c = myLatLon[0].lng();
+              var d = myLatLon[1].lng();
+
+              var swFinal;
+              var neFinal;
+              var smallLat;
+              var bigLat;
+              var smallLon;
+              var bigLon;
+
+              if(a>b){
+                bigLat = a;
+                smallLat = b;
+              }else {
+                bigLat = b;
+                smallLat = a;
+              }
+
+              if(c>d){
+                bigLon = c;
+                smallLon = d;
+              }else {
+                bigLon = d;
+                smallLon = c;
+              }
+
+              swFinal = new google.maps.LatLng(bigLat,smallLon);
+              neFinal = new google.maps.LatLng(smallLat,bigLon);
+              
+
+              rectangle2 = new google.maps.Rectangle({
+                draggable: true,
+                editable: false,
+                strokeColor: '#FF9E00',
+                strokeOpacity: 0.3,
+                strokeWeight: 1,
+                fillColor: '#FF9E00',
+                fillOpacity: 0.3,
+                map: document.map,
+                bounds: new google.maps.LatLngBounds(swFinal,neFinal) //0 -> s.w , 1-> n.e 
+              });
+              var center2 = rectangle2.getBounds().getCenter();
+              document.map.panTo(center2);
+
+            if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())<0.015){                 //cases gia to katallhlo zoom level analoga to rectangle2.
+               document.map.setZoom(15);
+            }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>0.015 &&(rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())<0.027){ 
+               document.map.setZoom(14);
+            }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.027 &&(rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())< 0.035){     
+               document.map.setZoom(13);
+            }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.035 &&(rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())< 0.17){
+               document.map.setZoom(12);
+            }else if ((rectangle2.getBounds().getSouthWest().lat()-rectangle2.getBounds().getNorthEast().lat())>=0.17){
+               document.map.setZoom(11);
+           }
+           google.maps.event.removeListener(myClickListener);
+        }
+      });
+    }
+
+    function searchTags(){
+
+      var tags = document.getElementById("searchbar").value;
+      if (rectangle2){
+
+        var lat1 = rectangle2.getBounds().getNorthEast().lat();
+        var lon1 = rectangle2.getBounds().getSouthWest().lng();
+        var lat2 = rectangle2.getBounds().getSouthWest().lat();
+        var lon2 = rectangle2.getBounds().getNorthEast().lng();
+
+        url="searchtags.php?tags="+tags+"&latstart="+lat1+"&latstop="+lat2+"&longstart="+lon1+"&longstop="+lon2;
+      }else{
+          url="searchtags.php?tags="+tags;
+        }
+          makeRequest(url, function(data){
+
+            var resultArray = JSON.parse(data.responseText);
+
+            for (var i = 0; i < resultArray.length; i++) {
+              markers[i] = displayLocation(resultArray[i]);
+              oms.addMarker(markers[i]);
+            } 
+            //trial clustering method. 
+            /*var markerCluster = new MarkerClusterer(document.map, markers, {
+                gridSize:1,
+                minimumClusterSize: 2,
+                maxZoom: 12
+             });*/
+          }); 
+      }
+    
+
+    function showDensity(url){
+      
+
+      makeRequest(url, function(data) {
+
+            var tempcount;
+            var max= 0;
+            var data = JSON.parse(data.responseText);
+
+            for (var i = 0; i < data.length; i++) {
+              for (var j = 0; j <data[i].length; j++){
+                tempcount = data[i][j]['count'];
+                if (max < tempcount){
+                  max = tempcount;
+                }
+              }
+            }
+            for (i = 0; i < data.length; i++) {
+              for (j = 0; j <data[i].length; j++){
+                tempcount = data[i][j]['count'];
+                var densityFactor = data[i][j]['count']/max;
+                if (densityFactor >0 && densityFactor< 0.020){
+                   var rectangle = new google.maps.Rectangle({
+                    strokeColor: '#F7D708',
+                    strokeOpacity: 0.35+(0.7*densityFactor),
+                    strokeWeight: 1,
+                    fillColor: '#F7D708',
+                    fillOpacity: 0.30+(0.7*densityFactor),
+                    map: document.map,
+                    bounds: new google.maps.LatLngBounds(
+                      new google.maps.LatLng(data[i][j]['latstart'], data[i][j]['longstart']),
+                      new google.maps.LatLng(data[i][j]['latstop'], data[i][j]['longstop']))
+                  });
+
+                google.maps.event.addListener(rectangle, 'click', function(event) {
+
+                      var latstop = this.getBounds().getNorthEast().lat();
+                      var lonstart = this.getBounds().getSouthWest().lng();
+                      var latstart = this.getBounds().getSouthWest().lat();
+                      var lonstop = this.getBounds().getNorthEast().lng();
+
+                      url = "popularTags.php?latstart="+latstart+"&latstop="+latstop+"&longstart="+lonstart+"&longstop="+lonstop;
+
+                      templatlng = event.latLng;
+
+                      makeRequest(url, function(input){
+                        var data2 = JSON.parse(input.responseText);
+                        var howManyTags = document.getElementById("howmanytags").value;
+
+                        var contentString = "<p style='text-align:center;font-weight:bold;'> Here are the tags: </p></br> ";
+
+                        for (i=0; i<=howManyTags-1; i++){
+                          if(data2[i] != null ){
+                            contentString = contentString + "<p style='padding:15px;height:10px;'>"+(i+1)+")Tag: <span style='font-weight:bold;'>" + data2[i]['tag'] + "</span> appears <span style='font-weight:bold;'>" +data2[i]['tf'] + "</span> times</p>"
+                          }
+                        }                 
+                        infoWindow = new google.maps.InfoWindow();
+                        infoWindow.setContent(contentString);
+                        infoWindow.setPosition(templatlng);
+                        infoWindow.open(document.map);
+                      });
+
+                    });
+
+                }else if(densityFactor>= 0.020 && densityFactor<= 0.2){
+                    rectangle = new google.maps.Rectangle({
+                    strokeColor: '#FF9E00',
+                    strokeOpacity: 0.3+(0.2*densityFactor),
+                    strokeWeight: 1,
+                    fillColor: '#FF9E00',
+                    fillOpacity: 0.3+(0.2*densityFactor),
+                    map: document.map,
+                    bounds: new google.maps.LatLngBounds(
+                      new google.maps.LatLng(data[i][j]['latstart'], data[i][j]['longstart']),
+                      new google.maps.LatLng(data[i][j]['latstop'], data[i][j]['longstop']))
+                  });
+
+                    var marker = new MarkerWithLabel({
+                     position: new google.maps.LatLng((data[i][j]['latstart']+data[i][j]['latstop'])/2,(data[i][j]['longstart']+data[i][j]['longstop'])/2),
+                     map: document.map,
+                     draggable: false,
+                     raiseOnDrag: false,
+                     icon: " ",
+                     labelAnchor: new google.maps.Point(7, 0),
+                     labelContent: tempcount.toString(),
+                     labelClass: "labels", // the CSS class for the label
+                     labelInBackground: false
+                    });
+                    labelMarkers.push(marker);
+
+
+                     google.maps.event.addListener(rectangle, 'click', function(event) {
+
+                      var latstop = this.getBounds().getNorthEast().lat();
+                      var lonstart = this.getBounds().getSouthWest().lng();
+                      var latstart = this.getBounds().getSouthWest().lat();
+                      var lonstop = this.getBounds().getNorthEast().lng();
+
+                      url = "popularTags.php?latstart="+latstart+"&latstop="+latstop+"&longstart="+lonstart+"&longstop="+lonstop;
+
+                      templatlng = event.latLng;
+
+                      makeRequest(url, function(input){
+                        var data2 = JSON.parse(input.responseText);
+                        var howManyTags = document.getElementById("howmanytags").value;
+
+                        var contentString = "<p style='text-align:center;font-weight:bold;'> Here are the tags: </p></br> ";
+
+                        for (i=0; i<=howManyTags-1; i++){
+                          if(data2[i] != null){
+                            contentString = contentString + "<p style='padding:15px;height:10px;'>"+(i+1)+")Tag: <span style='font-weight:bold;'>" + data2[i]['tag'] + "</span> appears <span style='font-weight:bold;'>" +data2[i]['tf'] + "</span> times</p>"
+                          }
+                        }                 
+                        infoWindow = new google.maps.InfoWindow();
+                        infoWindow.setContent(contentString);
+                        infoWindow.setPosition(templatlng);
+                        infoWindow.open(document.map);
+                      });
+
+                    });
+
+                }else if(densityFactor>= 0.2 && densityFactor<= 0.3){
+                    rectangle = new google.maps.Rectangle({
+                    strokeColor: '#FF9E00',
+                    strokeOpacity: 0.3+(0.4*densityFactor),
+                    strokeWeight: 1,
+                    fillColor: '#FF9E00',
+                    fillOpacity: 0.3+(0.4*densityFactor),
+                    map: document.map,
+                    bounds: new google.maps.LatLngBounds(
+                      new google.maps.LatLng(data[i][j]['latstart'], data[i][j]['longstart']),
+                      new google.maps.LatLng(data[i][j]['latstop'], data[i][j]['longstop']))
+                  });
+
+                    var marker = new MarkerWithLabel({
+                     position: new google.maps.LatLng((data[i][j]['latstart']+data[i][j]['latstop'])/2,(data[i][j]['longstart']+data[i][j]['longstop'])/2),
+                     map: document.map,
+                     draggable: false,
+                     raiseOnDrag: false,
+                     icon: " ",
+                     labelAnchor: new google.maps.Point(7, 0),
+                     labelContent: tempcount.toString(),
+                     labelClass: "labels", // the CSS class for the label
+                     labelInBackground: false
+                    });
+                    labelMarkers.push(marker);
+
+
+                    google.maps.event.addListener(rectangle, 'click', function(event) {
+
+                      var latstop = this.getBounds().getNorthEast().lat();
+                      var lonstart = this.getBounds().getSouthWest().lng();
+                      var latstart = this.getBounds().getSouthWest().lat();
+                      var lonstop = this.getBounds().getNorthEast().lng();
+
+                      url = "popularTags.php?latstart="+latstart+"&latstop="+latstop+"&longstart="+lonstart+"&longstop="+lonstop;
+
+                      templatlng = event.latLng;
+
+                      makeRequest(url, function(input){
+                        var data2 = JSON.parse(input.responseText);
+                        var howManyTags = document.getElementById("howmanytags").value;
+
+                        var contentString = "<p style='text-align:center;font-weight:bold;'> Here are the tags: </p></br> ";
+
+                        for (i=0; i<=howManyTags-1; i++){
+                          if(data2[i] != null){
+                            contentString = contentString + "<p style='padding:15px;height:10px;'>"+(i+1)+")Tag: <span style='font-weight:bold;'>" + data2[i]['tag'] + "</span> appears <span style='font-weight:bold;'>" +data2[i]['tf'] + "</span> times</p>"
+                          }
+                        }                 
+                        infoWindow = new google.maps.InfoWindow();
+                        infoWindow.setContent(contentString);
+                        infoWindow.setPosition(templatlng);
+                        infoWindow.open(document.map);
+                      });
+
+                    });
+
+                }else if(densityFactor > 0.3){
+                    rectangle = new google.maps.Rectangle({
+                    strokeColor: '#CE0000',
+                    strokeOpacity: 0.45,
+                    strokeWeight: 1,
+                    fillColor: '#CE0000',
+                    fillOpacity: 0.45,
+                    map: document.map,
+                    bounds: new google.maps.LatLngBounds(
+                      new google.maps.LatLng(data[i][j]['latstart'], data[i][j]['longstart']),
+                      new google.maps.LatLng(data[i][j]['latstop'], data[i][j]['longstop']))
+                  });
+                  
+                     var marker = new MarkerWithLabel({
+                       position: new google.maps.LatLng((data[i][j]['latstart']+data[i][j]['latstop'])/2,(data[i][j]['longstart']+data[i][j]['longstop'])/2),
+                       map: document.map,
+                       draggable: false,
+                       raiseOnDrag: false,
+                       icon: " ",
+                       labelAnchor: new google.maps.Point(7, 0),
+                       labelContent: tempcount.toString(),
+                       labelClass: "labels", // the CSS class for the label
+                       labelInBackground: false
+                    });
+                     labelMarkers.push(marker);
+
+
+                google.maps.event.addListener(rectangle, 'click', function(event) {
+
+                      var latstop = this.getBounds().getNorthEast().lat();
+                      var lonstart = this.getBounds().getSouthWest().lng();
+                      var latstart = this.getBounds().getSouthWest().lat();
+                      var lonstop = this.getBounds().getNorthEast().lng();
+
+                      url = "popularTags.php?latstart="+latstart+"&latstop="+latstop+"&longstart="+lonstart+"&longstop="+lonstop;
+
+                      templatlng = event.latLng;
+
+                      makeRequest(url, function(input){
+                        var data2 = JSON.parse(input.responseText);
+                        var howManyTags = document.getElementById("howmanytags").value;
+
+                        var contentString = "<p style='text-align:center;font-weight:bold;'> Here are the tags: </p></br> ";
+
+                        for (i=0; i<=howManyTags-1; i++){
+                          if(data2[i] != null){
+                            contentString = contentString + "<p style='padding:15px;height:10px;'>"+(i+1)+")Tag: <span style='font-weight:bold;'>" + data2[i]['tag'] + "</span> appears <span style='font-weight:bold;'>" +data2[i]['tf'] + "</span> times</p>"
+                          }
+                        }                 
+                        infoWindow = new google.maps.InfoWindow();
+                        infoWindow.setContent(contentString);
+                        infoWindow.setPosition(templatlng);
+                        infoWindow.open(document.map);
+                      });
+
+                    });
+
+                }
+              }
+            }   
+               //if (url=="myPHP.php?latstart="+lat1+"&latstop="+lat2+"&longstart="+lon1+"&longstop="+lon2+"&window=20"){
+                for (var i = 0; i<labelMarkers.length; i++){
+                      labelMarkers[i].setVisible(false);
+                   }
+
+              showMap();
+
+          });  
+    }
+
+    function showMap(){
+      document.getElementById("siteLoader").style.display = "none";
+      document.getElementById("map_canvas").style.opacity=1; 
+    }
+
+    function hideMap(){
+      document.getElementById("siteLoader").style.display = "block";
+      document.getElementById("map_canvas").style.opacity = 0.5;  
+    }
+
+    function pleaseWait() {
+
+      hideMap();
+
+      url ="";
+      
+      if (rectangle2){
+
+        var lat1 = rectangle2.getBounds().getNorthEast().lat();
+        var lon1 = rectangle2.getBounds().getSouthWest().lng();
+        var lat2 = rectangle2.getBounds().getSouthWest().lat();
+        var lon2 = rectangle2.getBounds().getNorthEast().lng();
+
+        document.map.panTo(rectangle2.getBounds().getCenter());
+
+            if ((lat2-lat1)<0.015){                   //cases gia to katallhlo zoom level analoga to rectangle.
+               document.map.setZoom(15);
+            }else if ((lat2-lat1)>0.015 &&(lat2-lat1)<0.027){ 
+               document.map.setZoom(14);
+            }else if ((lat2-lat1)>=0.027 &&(lat2-lat1)< 0.035){     
+               document.map.setZoom(13);
+            }else if ((lat2-lat1)>=0.035 &&(lat2-lat1)< 0.17){
+               document.map.setZoom(12);
+            }else if ((lat2-lat1)>=0.17){
+               document.map.setZoom(11);
+           }
+
+        mywindow=document.getElementById("windowbtn").value;
+        url = "myPHP.php?latstart="+lat1+"&latstop="+lat2+"&longstart="+lon1+"&longstop="+lon2+"&window="+mywindow;
+        showDensity(url);       
+        document.getElementById("howmanytags").style.display = "inline";
+      }else{
+        var center = new google.maps.LatLng(37.970211, 23.719736);
+        document.map.panTo(center);
+        document.map.setZoom(13);
+        mywindow= document.getElementById("windowbtn").value;
+        createURL(mywindow);
+      }
+
+    }
+
+    function createURL(mywindow){
+
+      url = "myPHP.php?latstart=37.835065&latstop=38.072234&longstart=23.557054&longstop=23.891791&window="+mywindow;
+      showDensity(url);       
+      document.getElementById("howmanytags").style.display = "inline";
+
+    }
+
+    function createURL2(mywindow){
+
+      url = "myPHP.php?latstart=40.318292&latstop=40.875117&longstart=22.634906&longstop=23.555011&window="+mywindow;
+      showDensity(url);       
+      document.getElementById("howmanytags").style.display = "inline";
+    }
+
+    function pleaseWait2() {
+
+      hideMap();
+
+      url ="";
+      
+      if (rectangle2){
+
+        var lat1 = rectangle2.getBounds().getNorthEast().lat();
+        var lon1 = rectangle2.getBounds().getSouthWest().lng();
+        var lat2 = rectangle2.getBounds().getSouthWest().lat();
+        var lon2 = rectangle2.getBounds().getNorthEast().lng();
+
+        document.map.panTo(rectangle2.getBounds().getCenter());
+
+            if ((lat2-lat1)<0.015){                   //cases gia to katallhlo zoom level analoga to rectangle.
+               document.map.setZoom(15);
+            }else if ((lat2-lat1)>0.015 &&(lat2-lat1)<0.027){ 
+               document.map.setZoom(14);
+            }else if ((lat2-lat1)>=0.027 &&(lat2-lat1)< 0.035){     
+               document.map.setZoom(13);
+            }else if ((lat2-lat1)>=0.035 &&(lat2-lat1)< 0.17){
+               document.map.setZoom(12);
+            }else if ((lat2-lat1)>=0.17){
+               document.map.setZoom(11);
+           }
+
+        mywindow=document.getElementById("windowbtn").value;
+        url = "myPHP.php?latstart="+lat1+"&latstop="+lat2+"&longstart="+lon1+"&longstop="+lon2+"&window="+mywindow;
+        showDensity(url);
+        document.getElementById("howmanytags").style.display = "inline";
+      }else{
+        var center = new google.maps.LatLng(40.5863292,22.9844794);
+        document.map.panTo(center);
+        document.map.setZoom(12);
+        mywindow=document.getElementById("windowbtn").value;
+        createURL2(mywindow);
+      }
+            
+    }
+
+    function makeRequest(url, callback) {
+      var ajaxObject;
+      if (window.XMLHttpRequest) {
+        ajaxObject = new XMLHttpRequest();
+      // IE7+, Firefox, Chrome, Opera, Safari
+      } else {
+        ajaxObject = new ActiveXObject("Microsoft.XMLHTTP");
+      // IE6, IE5
+      }
+      ajaxObject.onreadystatechange = function() {
+        if (ajaxObject.readyState == 4 && ajaxObject.status == 200) {
+          callback(ajaxObject);
+        }
+      }
+      ajaxObject.open("GET", url, true);
+      ajaxObject.send();  
+    }
+
+    function displayLocation(item) {
+      var lat = parseFloat(item.latitude);
+      var lon = parseFloat(item.longitude);
+      var serverID = item.server_id;
+      var farmID = item.farm_id;
+      var secret = item.secret;
+      var photoID = item.id;
+
+      var myLatlng = new google.maps.LatLng(lat,lon);
+
+      var marker = new google.maps.Marker({
+        position: myLatlng,
+        map: document.map
+      });
+
+      var url = "https://farm"+farmID+".staticflickr.com/"+serverID+"/"+photoID+"_"+secret+".jpg";
+
+      google.maps.event.addListener(marker, 'mouseover', function() {
+        document.getElementById("imageid").src=url;
+      });
+      
+      return marker;
+  }
+
+  </script>
+</head>
+<body onload="initialize();">
+  
+    <div id= "header">
+       <div><a href="index.html">HotSpot it</a></div>
+       <div class="headerSearch">
+          <input type="text" id="searchbar" placeholder="Enter Keywords and Tags">
+          <input type="submit" id="submitsearch" value="Search" onclick="searchTags();">
+          <input id="howmanytags" type="text" placeholder="Tags?" style="display:none" size="5" />
+          <input type="button" id="createbox" value="Box it" onclick="selectRectangle();">
+       </div>
+    </div>
+    <div id = "main">
+      <div class="leftcol">
+        <div class="buttons">
+          <h2>Select the <span>Number of Cells</span> and see more <span>HotSpots</span> in:</h2>
+          <div class="more2">
+            <input id="windowbtn" class="leftColButton" type="text" placeholder="How Many Cells?" size="11" />
+          </div>
+          <div class="more">
+            <input class="leftColButton" type="button" value="Athens" onclick="pleaseWait();" />
+          </div>
+          <div class="more">
+            <input class="leftColButton" type="button" value="Thessaloniki" onclick="pleaseWait2();" />
+          </div>
+        </div>
+        <div class="showPhoto"> <img id="imageid" src=""/>
+        </div>
+      </div>
+      <div id="siteLoader" style="display:none">
+        <div class="loading_Text">
+          <h2>Please wait while the page loads...</h2>
+        </div> 
+        <div class="siteDetailLoader"> 
+          <img src="loader.gif" border='0'/>
+        </div>
+      </div>
+      <div id="map_canvas"></div>
+    </div>
+</body>
+</html>
